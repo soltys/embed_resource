@@ -18,8 +18,6 @@ FetchContent_Declare(
 set(BOOST_INCLUDE_LIBRARIES ${BOOST_REQUIRED_LIBRARIES})
 FetchContent_MakeAvailable(Boost)
 
-find_package(Boost REQUIRED ${BOOST_REQUIRED_LIBRARIES})
-
 foreach(lib_name ${BOOST_REQUIRED_LIBRARIES})
     set_target_properties(boost_${lib_name} PROPERTIES FOLDER "Dependencies")
 endforeach()
@@ -47,5 +45,5 @@ function(embed_resources out_var)
 endfunction()
 
 add_executable(embed-resource embedresource.cpp embededresource.h Resource.h)
-target_link_libraries(embed-resource ${Boost_LIBRARIES})
-target_include_directories(embed-resource PRIVATE ${Boost_INCLUDE_DIRS} ${PROJECT_BINARY_DIR})
+target_link_libraries(embed-resource Boost::program_options)
+target_include_directories(embed-resource PRIVATE ${PROJECT_BINARY_DIR})
