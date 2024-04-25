@@ -1,12 +1,13 @@
 #pragma once
 #include <string>
+#include <cstddef>
 
-class Resource {
+class EmbedResource {
 public:
-    Resource(const char* start, const int len) : resource_data(start), data_len(len) {}
+    EmbedResource(const char* start, const std::size_t len) : resource_data(start), data_len(len) {}
 
     const char * const &data() const { return resource_data; }
-    const int &size() const { return data_len; }
+    const std::size_t &size() const { return data_len; }
 
     const char *begin() const { return resource_data; }
     const char *end() const { return resource_data + data_len; }
@@ -15,10 +16,10 @@ public:
 
 private:
     const char* resource_data;
-    const int data_len;
+    const std::size_t data_len;
 
 };
 
 #define LOAD_RESOURCE(RESOURCE) ([]() {                      \
-        return Resource(_resource_##RESOURCE, _resource_##RESOURCE##_len);  \
+        return EmbedResource(_resource_##RESOURCE, _resource_##RESOURCE##_len);  \
     })()
