@@ -2,9 +2,9 @@
 #include <string>
 #include <cstddef>
 
-class Resource {
+class EmbedResource {
 public:
-    Resource(const char* start, const std::size_t len) : resource_data(start), data_len(len) {}
+    EmbedResource(const char* start, const std::size_t len) : resource_data(start), data_len(len) {}
 
     const char * const &data() const { return resource_data; }
     const std::size_t &size() const { return data_len; }
@@ -21,5 +21,5 @@ private:
 };
 
 #define LOAD_RESOURCE(RESOURCE) ([]() {                      \
-        return Resource(_resource_##RESOURCE, _resource_##RESOURCE##_len);  \
+        return EmbedResource(_resource_##RESOURCE, _resource_##RESOURCE##_len);  \
     })()

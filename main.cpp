@@ -1,8 +1,9 @@
+#include <config.h>
+
 #include <iostream>
 #include <fstream>
 #include <algorithm>
 #include <string>
-#include <embededresource.h>
 #include <boost/program_options.hpp>
 #include <vector>
 
@@ -101,7 +102,7 @@ int main(int argc, char** argv)
 	ofs.open(output_file, std::ios::out | std::ios::binary);
 
 	ofs << "#pragma once" << std::endl;
-	ofs << "#include \"Resource.h\"" << std::endl;
+	ofs << "#include <EmbededResource.hpp>" << std::endl;
 	ofs << "" << std::endl;
 
 	if (showContentAsComment)

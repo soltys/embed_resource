@@ -22,7 +22,7 @@ foreach(lib_name ${BOOST_REQUIRED_LIBRARIES})
     set_target_properties(boost_${lib_name} PROPERTIES FOLDER "Dependencies")
 endforeach()
 
-configure_file("embededresource.h.in" "embededresource.h")
+configure_file("config.h.in" "config.h")
 
 function(embed_resources out_var)
     set(flags CONTENT_AS_COMMENT)
@@ -57,7 +57,7 @@ function(embed_resources out_var)
     include_directories(${out_f_dir} ${EMBED_RESOURCES_SOURCE_DIR})
 endfunction()
 
-add_executable(embed_resource embedresource.cpp embededresource.h Resource.h )
+add_executable(embed_resource main.cpp config.h EmbedResource.hpp )
 target_link_libraries(embed_resource Boost::program_options)
 target_include_directories(embed_resource PRIVATE ${PROJECT_BINARY_DIR})
 
