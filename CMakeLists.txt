@@ -43,7 +43,7 @@ function(embed_resources out_var)
         add_custom_command(OUTPUT ${out_f}
                 COMMAND ${CMAKE_COMMAND} -E make_directory "${out_f_dir}"
                 COMMAND er -i "${src_f}" -o "${out_f}"
-                DEPENDS "${in_f}" embed_resource
+                DEPENDS "${in_f}" er
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                 COMMENT "Building binary file for embedding ${out_f} from ${src_f}"
                 VERBATIM)
