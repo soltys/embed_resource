@@ -4,7 +4,9 @@
 #include <string>
 #include <embededresource.h>
 #include <boost/program_options.hpp>
+#include <vector>
 
+typedef unsigned char byte;
 namespace po = boost::program_options;
 void show_help(std::ostream& ostream, po::options_description desc)
 {
@@ -23,6 +25,7 @@ int main(int argc, char** argv)
 	desc.add_options()
 		("input,i", po::value<std::string>(), "input file")
 		("output,o", po::value<std::string>(), "output file")
+		("comment,c", "embeded file content as multiline c comment")
 		("version,v", "shows version of the application")
 		("help,h", "shows help")
 		;
@@ -31,13 +34,13 @@ int main(int argc, char** argv)
 	store(po::parse_command_line(argc, argv, desc), vm);
 	notify(vm);
 
-	if(!vm["help"].empty())
+	if (!vm["help"].empty())
 	{
 		show_help(std::cout, desc);
 		return EXIT_SUCCESS;
 	}
 
-	if(!vm["version"].empty())
+	if (!vm["version"].empty())
 	{
 		std::cout << "embed-resource version " << PROJECT_VERSION << std::endl;
 		return EXIT_SUCCESS;
@@ -62,6 +65,12 @@ int main(int argc, char** argv)
 	}
 	output_file = vm["output"].as<std::string>();
 
+	bool showContentAsComment = false;
+	if (!vm["comment"].empty())
+	{
+		showContentAsComment = true;
+	}
+
 	std::string sym(input_file);
 	std::replace(sym.begin(), sym.end(), '.', '_');
 	std::replace(sym.begin(), sym.end(), '-', '_');
@@ -69,7 +78,7 @@ int main(int argc, char** argv)
 	std::replace(sym.begin(), sym.end(), '\\', '_');
 
 	std::ifstream ifs;
-	ifs.open(input_file);
+	ifs.open(input_file, std::ios::in | std::ios::binary);
 
 	std::ofstream ofs;
 	ofs.open(output_file);
@@ -77,28 +86,46 @@ int main(int argc, char** argv)
 	ofs << "#pragma once" << std::endl;
 	ofs << "#include \"Resource.h\"" << std::endl;
 	ofs << "" << std::endl;
+
+	ifs.seekg(0, std::ifstream::end);
+	std::streampos size = ifs.tellg();
+	ifs.seekg(0);
+
+	auto buffer = std::vector<byte>();
+	buffer.reserve(size);
+	buffer.insert(buffer.begin(),
+		std::istream_iterator<byte>(ifs),
+		std::istream_iterator<byte>());
+	ifs.close();
+
+	if (showContentAsComment)
+	{
+		ofs << "// Content of input file " << input_file << std::endl;
+		ofs << "/***" << std::endl;
+
+		for (int i = 0; i < buffer.size(); i++) {
+			ofs << buffer[i];
+		}
+		ofs << std::endl 
+			<< "***/" << std::endl;
+	}
 	ofs << "const char _resource_" << sym << "[] = {" << std::endl;
 
 	size_t lineCount = 0;
-	while (true)
-	{
-		char c;
-		ifs.get(c);
-		if (ifs.eof())
-			break;
 
-		ofs << "0x" << std::hex << (c & 0xff) << ", ";
-		if (++lineCount == 20) {
-			ofs << std::endl;
-			lineCount = 0;
-		}
+	for (int i = 0; i < buffer.size(); i++) {
+		ofs << "0x" << std::hex << (buffer[i] & 0xff) << ", ";
+	}
+
+	if (++lineCount == 20) {
+		ofs << std::endl;
+		lineCount = 0;
 	}
 
 	ofs << std::endl << "};" << std::endl;
 	ofs << "const std::size_t _resource_" << sym << "_len = sizeof(_resource_" << sym << ");";
 
 	ofs.close();
-	ifs.close();
 
 	return EXIT_SUCCESS;
 }
