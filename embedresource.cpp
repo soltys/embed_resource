@@ -6,7 +6,7 @@
 #include <boost/program_options.hpp>
 #include <vector>
 
-typedef char byte;
+typedef unsigned char byte;
 namespace po = boost::program_options;
 void show_help(std::ostream& ostream, po::options_description desc)
 {
@@ -16,6 +16,25 @@ void show_help(std::ostream& ostream, po::options_description desc)
 		<< desc << std::endl
 		<< "EXAMPLE:" << std::endl
 		<< "    embed-resource.exe -i foo.txt -o foo.hpp" << std::endl;
+}
+
+std::vector<byte> read_file_into_vector(std::string file_name) {
+	std::ifstream ifs;
+	ifs.open(file_name, std::ios::in | std::ios::binary);
+	ifs.unsetf(std::ios::skipws);
+
+	// get its size:
+	std::streampos input_size;
+	ifs.seekg(0, std::ios::end);
+	input_size = ifs.tellg();
+	ifs.seekg(0, std::ios::beg);
+
+	auto buffer = std::vector<byte>();
+	buffer.reserve(input_size);
+	std::copy(std::istream_iterator<byte>(ifs), std::istream_iterator<byte>(), std::back_inserter(buffer));
+	ifs.close();
+
+	return buffer;
 }
 
 int main(int argc, char** argv)
@@ -76,9 +95,7 @@ int main(int argc, char** argv)
 	std::replace(sym.begin(), sym.end(), '/', '_');
 	std::replace(sym.begin(), sym.end(), '\\', '_');
 
-	std::ifstream ifs;
-	ifs.open(input_file, std::ios::in | std::ios::binary);
-	ifs.unsetf(std::ios::skipws);
+	auto input_file_content = read_file_into_vector(input_file);
 
 	std::ofstream ofs;
 	ofs.open(output_file, std::ios::out | std::ios::binary);
@@ -87,35 +104,24 @@ int main(int argc, char** argv)
 	ofs << "#include \"Resource.h\"" << std::endl;
 	ofs << "" << std::endl;
 
-	// get its size:
-	std::streampos input_size;
-	ifs.seekg(0, std::ios::end);
-	input_size = ifs.tellg();
-	ifs.seekg(0, std::ios::beg);
-
-	auto buffer = std::vector<byte>();
-	buffer.reserve(input_size);
-	std::copy(std::istream_iterator<byte>(ifs), std::istream_iterator<byte>(), std::back_inserter(buffer));	
-	ifs.close();
-
 	if (showContentAsComment)
 	{
 		ofs << "// Content of input file " << input_file << std::endl;
 		ofs << "/***" << std::endl;
-		std::copy(buffer.begin(), buffer.end(), std::ostream_iterator< byte >(ofs));
-		ofs << std::endl 
+		std::copy(input_file_content.begin(), input_file_content.end(), std::ostream_iterator< byte >(ofs));
+		ofs << std::endl
 			<< "***/" << std::endl;
 	}
 	ofs << "const char _resource_" << sym << "[] = {" << std::endl;
 
 	size_t lineCount = 0;
 
-	for (int i = 0; i < buffer.size(); i++) {
+	for (int i = 0; i < input_file_content.size(); i++) {
 		if (++lineCount == 20) {
 			ofs << std::endl;
 			lineCount = 0;
 		}
-		ofs << "0x" << std::hex << (buffer[i] & 0xff) << ", ";
+		ofs << "0x" << std::hex << (input_file_content[i] & 0xff) << ", ";
 	}
 
 	ofs << std::endl << "};" << std::endl;
