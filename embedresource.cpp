@@ -4,7 +4,9 @@
 #include <string>
 #include <embededresource.h>
 #include <boost/program_options.hpp>
+#include <vector>
 
+typedef char byte;
 namespace po = boost::program_options;
 void show_help(std::ostream& ostream, po::options_description desc)
 {
@@ -18,11 +20,11 @@ void show_help(std::ostream& ostream, po::options_description desc)
 
 int main(int argc, char** argv)
 {
-
 	po::options_description desc("embed-resource[.exe] usage");
 	desc.add_options()
 		("input,i", po::value<std::string>(), "input file")
 		("output,o", po::value<std::string>(), "output file")
+		("comment,c", "embeded file content as multiline c comment")
 		("version,v", "shows version of the application")
 		("help,h", "shows help")
 		;
@@ -31,13 +33,13 @@ int main(int argc, char** argv)
 	store(po::parse_command_line(argc, argv, desc), vm);
 	notify(vm);
 
-	if(!vm["help"].empty())
+	if (!vm["help"].empty())
 	{
 		show_help(std::cout, desc);
 		return EXIT_SUCCESS;
 	}
 
-	if(!vm["version"].empty())
+	if (!vm["version"].empty())
 	{
 		std::cout << "embed-resource version " << PROJECT_VERSION << std::endl;
 		return EXIT_SUCCESS;
@@ -62,6 +64,12 @@ int main(int argc, char** argv)
 	}
 	output_file = vm["output"].as<std::string>();
 
+	bool showContentAsComment = false;
+	if (!vm["comment"].empty())
+	{
+		showContentAsComment = true;
+	}
+
 	std::string sym(input_file);
 	std::replace(sym.begin(), sym.end(), '.', '_');
 	std::replace(sym.begin(), sym.end(), '-', '_');
@@ -69,36 +77,51 @@ int main(int argc, char** argv)
 	std::replace(sym.begin(), sym.end(), '\\', '_');
 
 	std::ifstream ifs;
-	ifs.open(input_file);
+	ifs.open(input_file, std::ios::in | std::ios::binary);
+	ifs.unsetf(std::ios::skipws);
 
 	std::ofstream ofs;
-	ofs.open(output_file);
+	ofs.open(output_file, std::ios::out | std::ios::binary);
 
 	ofs << "#pragma once" << std::endl;
 	ofs << "#include \"Resource.h\"" << std::endl;
 	ofs << "" << std::endl;
+
+	// get its size:
+	std::streampos input_size;
+	ifs.seekg(0, std::ios::end);
+	input_size = ifs.tellg();
+	ifs.seekg(0, std::ios::beg);
+
+	auto buffer = std::vector<byte>();
+	buffer.reserve(input_size);
+	std::copy(std::istream_iterator<byte>(ifs), std::istream_iterator<byte>(), std::back_inserter(buffer));	
+	ifs.close();
+
+	if (showContentAsComment)
+	{
+		ofs << "// Content of input file " << input_file << std::endl;
+		ofs << "/***" << std::endl;
+		std::copy(buffer.begin(), buffer.end(), std::ostream_iterator< byte >(ofs));
+		ofs << std::endl 
+			<< "***/" << std::endl;
+	}
 	ofs << "const char _resource_" << sym << "[] = {" << std::endl;
 
 	size_t lineCount = 0;
-	while (true)
-	{
-		char c;
-		ifs.get(c);
-		if (ifs.eof())
-			break;
 
-		ofs << "0x" << std::hex << (c & 0xff) << ", ";
+	for (int i = 0; i < buffer.size(); i++) {
 		if (++lineCount == 20) {
 			ofs << std::endl;
 			lineCount = 0;
 		}
+		ofs << "0x" << std::hex << (buffer[i] & 0xff) << ", ";
 	}
 
 	ofs << std::endl << "};" << std::endl;
 	ofs << "const std::size_t _resource_" << sym << "_len = sizeof(_resource_" << sym << ");";
 
 	ofs.close();
-	ifs.close();
 
 	return EXIT_SUCCESS;
 }

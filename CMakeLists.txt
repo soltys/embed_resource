@@ -25,25 +25,40 @@ endforeach()
 configure_file("embededresource.h.in" "embededresource.h")
 
 function(embed_resources out_var)
+    set(flags CONTENT_AS_COMMENT)
+    set(args)
+    set(listArgs FILES)
+
+    cmake_parse_arguments(ER_ARG "${flags}" "${args}" "${listArgs}" ${ARGN})
+
+    if (NOT ER_ARG_FILES)
+        message(FATAL_ERROR "[embed_resources]: FILES is a required argument")
+    endif()
+
+    if(${ER_ARG_CONTENT_AS_COMMENT})
+        set(er_COMMENT_ARG "-c")
+    endif()
     set(result)
-    foreach(in_f ${ARGN})
+    foreach(in_f ${ER_ARG_FILES})
         file(RELATIVE_PATH src_f ${CMAKE_CURRENT_SOURCE_DIR} "${CMAKE_CURRENT_SOURCE_DIR}/${in_f}")
         set(out_f "${PROJECT_BINARY_DIR}/${in_f}.hpp")
         get_filename_component(out_f_dir "${out_f}" DIRECTORY)
         add_custom_command(OUTPUT ${out_f}
                 COMMAND ${CMAKE_COMMAND} -E make_directory "${out_f_dir}"
-                COMMAND embed-resource -i "${src_f}" -o "${out_f}"
-                DEPENDS "${in_f}" embed-resource
+                COMMAND embed_resource ${er_COMMENT_ARG} -i "${src_f}" -o "${out_f}" 
+                DEPENDS "${in_f}" embed_resource
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                 COMMENT "Building binary file for embedding ${out_f} from ${src_f}"
                 VERBATIM)
         list(APPEND result "${out_f}")
     endforeach()
     set(${out_var} "${result}" PARENT_SCOPE)
-    get_target_property(EMBED_RESOURCES_SOURCE_DIR embed-resource SOURCE_DIR)
+    get_target_property(EMBED_RESOURCES_SOURCE_DIR embed_resource SOURCE_DIR)
     include_directories(${out_f_dir} ${EMBED_RESOURCES_SOURCE_DIR})
 endfunction()
 
-add_executable(embed-resource embedresource.cpp embededresource.h Resource.h)
-target_link_libraries(embed-resource Boost::program_options)
-target_include_directories(embed-resource PRIVATE ${PROJECT_BINARY_DIR})
+add_executable(embed_resource embedresource.cpp embededresource.h Resource.h )
+target_link_libraries(embed_resource Boost::program_options)
+target_include_directories(embed_resource PRIVATE ${PROJECT_BINARY_DIR})
+
+set_target_properties(embed_resource PROPERTIES PROJECT_LABEL "Embed Resource")
