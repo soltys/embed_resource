@@ -25,7 +25,7 @@ endforeach()
 configure_file("embededresource.h.in" "embededresource.h")
 
 function(embed_resources out_var)
-    set(flags)
+    set(flags CONTENT_AS_COMMENT)
     set(args)
     set(listArgs FILES)
 
