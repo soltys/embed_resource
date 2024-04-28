@@ -29,25 +29,23 @@ function(embed_resources out_var)
     set(args)
     set(listArgs FILES)
 
-    cmake_parse_arguments(er_arg "${flags}" "${args}" "${listArgs}" ${ARGN})
+    cmake_parse_arguments(ER_ARG "${flags}" "${args}" "${listArgs}" ${ARGN})
 
-    if (NOT er_arg_FILES)
+    if (NOT ER_ARG_FILES)
         message(FATAL_ERROR "[embed_resources]: FILES is a required argument")
     endif()
 
-    set(er_ADDTIONAL_ARGS "")
-    if(er_arg_CONTENT_AS_COMMENT)
-        set(er_ADDTIONAL_ARGS "${er_ADDTIONAL_ARGS} -c")
+    if(${ER_ARG_CONTENT_AS_COMMENT})
+        set(er_COMMENT_ARG "-c")
     endif()
-
     set(result)
-    foreach(in_f ${er_arg_FILES})
+    foreach(in_f ${ER_ARG_FILES})
         file(RELATIVE_PATH src_f ${CMAKE_CURRENT_SOURCE_DIR} "${CMAKE_CURRENT_SOURCE_DIR}/${in_f}")
         set(out_f "${PROJECT_BINARY_DIR}/${in_f}.hpp")
         get_filename_component(out_f_dir "${out_f}" DIRECTORY)
         add_custom_command(OUTPUT ${out_f}
                 COMMAND ${CMAKE_COMMAND} -E make_directory "${out_f_dir}"
-                COMMAND embed_resource -i "${src_f}" -o "${out_f}" ${er_ADDTIONAL_ARGS}
+                COMMAND embed_resource ${er_COMMENT_ARG} -i "${src_f}" -o "${out_f}" 
                 DEPENDS "${in_f}" embed_resource
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                 COMMENT "Building binary file for embedding ${out_f} from ${src_f}"
@@ -59,7 +57,7 @@ function(embed_resources out_var)
     include_directories(${out_f_dir} ${EMBED_RESOURCES_SOURCE_DIR})
 endfunction()
 
-add_executable(embed_resource embedresource.cpp embededresource.h Resource.h)
+add_executable(embed_resource embedresource.cpp embededresource.h Resource.h )
 target_link_libraries(embed_resource Boost::program_options)
 target_include_directories(embed_resource PRIVATE ${PROJECT_BINARY_DIR})
 

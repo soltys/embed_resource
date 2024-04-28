@@ -6,7 +6,7 @@
 #include <boost/program_options.hpp>
 #include <vector>
 
-typedef unsigned char byte;
+typedef char byte;
 namespace po = boost::program_options;
 void show_help(std::ostream& ostream, po::options_description desc)
 {
@@ -20,7 +20,6 @@ void show_help(std::ostream& ostream, po::options_description desc)
 
 int main(int argc, char** argv)
 {
-
 	po::options_description desc("embed-resource[.exe] usage");
 	desc.add_options()
 		("input,i", po::value<std::string>(), "input file")
@@ -79,33 +78,31 @@ int main(int argc, char** argv)
 
 	std::ifstream ifs;
 	ifs.open(input_file, std::ios::in | std::ios::binary);
+	ifs.unsetf(std::ios::skipws);
 
 	std::ofstream ofs;
-	ofs.open(output_file);
+	ofs.open(output_file, std::ios::out | std::ios::binary);
 
 	ofs << "#pragma once" << std::endl;
 	ofs << "#include \"Resource.h\"" << std::endl;
 	ofs << "" << std::endl;
 
-	ifs.seekg(0, std::ifstream::end);
-	std::streampos size = ifs.tellg();
-	ifs.seekg(0);
+	// get its size:
+	std::streampos input_size;
+	ifs.seekg(0, std::ios::end);
+	input_size = ifs.tellg();
+	ifs.seekg(0, std::ios::beg);
 
 	auto buffer = std::vector<byte>();
-	buffer.reserve(size);
-	buffer.insert(buffer.begin(),
-		std::istream_iterator<byte>(ifs),
-		std::istream_iterator<byte>());
+	buffer.reserve(input_size);
+	std::copy(std::istream_iterator<byte>(ifs), std::istream_iterator<byte>(), std::back_inserter(buffer));	
 	ifs.close();
 
 	if (showContentAsComment)
 	{
 		ofs << "// Content of input file " << input_file << std::endl;
 		ofs << "/***" << std::endl;
-
-		for (int i = 0; i < buffer.size(); i++) {
-			ofs << buffer[i];
-		}
+		std::copy(buffer.begin(), buffer.end(), std::ostream_iterator< byte >(ofs));
 		ofs << std::endl 
 			<< "***/" << std::endl;
 	}
@@ -114,12 +111,11 @@ int main(int argc, char** argv)
 	size_t lineCount = 0;
 
 	for (int i = 0; i < buffer.size(); i++) {
+		if (++lineCount == 20) {
+			ofs << std::endl;
+			lineCount = 0;
+		}
 		ofs << "0x" << std::hex << (buffer[i] & 0xff) << ", ";
-	}
-
-	if (++lineCount == 20) {
-		ofs << std::endl;
-		lineCount = 0;
 	}
 
 	ofs << std::endl << "};" << std::endl;
