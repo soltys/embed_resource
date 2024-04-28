@@ -35,6 +35,11 @@ function(embed_resources out_var)
         message(FATAL_ERROR "[embed_resources]: FILES is a required argument")
     endif()
 
+    set(er_ADDTIONAL_ARGS "")
+    if(er_arg_CONTENT_AS_COMMENT)
+        set(er_ADDTIONAL_ARGS "${er_ADDTIONAL_ARGS} -c")
+    endif()
+
     set(result)
     foreach(in_f ${er_arg_FILES})
         file(RELATIVE_PATH src_f ${CMAKE_CURRENT_SOURCE_DIR} "${CMAKE_CURRENT_SOURCE_DIR}/${in_f}")
@@ -42,7 +47,7 @@ function(embed_resources out_var)
         get_filename_component(out_f_dir "${out_f}" DIRECTORY)
         add_custom_command(OUTPUT ${out_f}
                 COMMAND ${CMAKE_COMMAND} -E make_directory "${out_f_dir}"
-                COMMAND embed_resource -i "${src_f}" -o "${out_f}"
+                COMMAND embed_resource -i "${src_f}" -o "${out_f}" ${er_ADDTIONAL_ARGS}
                 DEPENDS "${in_f}" embed_resource
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                 COMMENT "Building binary file for embedding ${out_f} from ${src_f}"
