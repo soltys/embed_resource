@@ -42,8 +42,8 @@ function(embed_resources out_var)
         get_filename_component(out_f_dir "${out_f}" DIRECTORY)
         add_custom_command(OUTPUT ${out_f}
                 COMMAND ${CMAKE_COMMAND} -E make_directory "${out_f_dir}"
-                COMMAND er -i "${src_f}" -o "${out_f}"
-                DEPENDS "${in_f}" er
+                COMMAND embed_resource -i "${src_f}" -o "${out_f}"
+                DEPENDS "${in_f}" embed_resource
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                 COMMENT "Building binary file for embedding ${out_f} from ${src_f}"
                 VERBATIM)
@@ -58,5 +58,4 @@ add_executable(embed_resource embedresource.cpp embededresource.h Resource.h)
 target_link_libraries(embed_resource Boost::program_options)
 target_include_directories(embed_resource PRIVATE ${PROJECT_BINARY_DIR})
 
-set_target_properties(embed_resource PROPERTIES OUTPUT_NAME "er")
 set_target_properties(embed_resource PROPERTIES PROJECT_LABEL "Embed Resource")
