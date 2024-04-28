@@ -102,7 +102,7 @@ int main(int argc, char** argv)
 	ofs.open(output_file, std::ios::out | std::ios::binary);
 
 	ofs << "#pragma once" << std::endl;
-	ofs << "#include <EmbededResource.hpp>" << std::endl;
+	ofs << "#include <EmbedResource.hpp>" << std::endl;
 	ofs << "" << std::endl;
 
 	if (showContentAsComment)
