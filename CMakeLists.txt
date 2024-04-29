@@ -7,6 +7,16 @@ project(EmbedResource
 
 configure_file("config.h.in" "${PROJECT_BINARY_DIR}/internal/config.h")
 
+add_executable(embed_resource main.cpp EmbedResource.hpp Flags.hpp getopt.cpp getopt.h)
+target_include_directories(embed_resource PRIVATE "${PROJECT_BINARY_DIR}")
+
+set_target_properties(embed_resource PROPERTIES
+                        PROJECT_LABEL "Embed Resource" 
+                        CXX_STANDARD 17
+                        CXX_STANDARD_REQUIRED YES
+                        CXX_EXTENSIONS Off)
+
+
 function(embed_resources out_var)
     set(flags CONTENT_AS_COMMENT)
     set(args)
@@ -40,11 +50,3 @@ function(embed_resources out_var)
     include_directories(${out_f_dir} ${EMBED_RESOURCES_SOURCE_DIR})
 endfunction()
 
-add_executable(embed_resource main.cpp EmbedResource.hpp Flags.hpp getopt.cpp getopt.h)
-target_include_directories(embed_resource PRIVATE "${PROJECT_BINARY_DIR}")
-
-set_target_properties(embed_resource PROPERTIES
-                        PROJECT_LABEL "Embed Resource" 
-                        CXX_STANDARD 17
-                        CXX_STANDARD_REQUIRED YES
-                        CXX_EXTENSIONS Off)
