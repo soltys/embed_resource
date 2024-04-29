@@ -1,25 +1,26 @@
-#include <config.h>
+#include <internal/config.h>
 
 #include <iostream>
 #include <fstream>
 #include <algorithm>
 #include <string>
-#include <boost/program_options.hpp>
 #include <vector>
+#include "Flags.hpp"
 
 typedef unsigned char byte;
-namespace po = boost::program_options;
-void show_help(std::ostream& ostream, po::options_description desc)
+void show_help(char *program_name, std::ostream &ostream, Flags desc)
 {
 	ostream
 		<< "embed-resource (ver. " << PROJECT_VERSION << ")" << std::endl
-		<< "    Creates {output_file_name} (which will be .hpp type file) from the contents of {input_file_name}" << std::endl
-		<< desc << std::endl
-		<< "EXAMPLE:" << std::endl
-		<< "    embed-resource.exe -i foo.txt -o foo.hpp" << std::endl;
+		<< "    Creates {output_file_name} (which will be .hpp type file) from the contents of {input_file_name}" << std::endl;
+	desc.PrintHelp(program_name, ostream);
+	ostream << std::endl
+			<< "EXAMPLE:" << std::endl
+			<< "    embed-resource.exe -i foo.txt -o foo.hpp" << std::endl;
 }
 
-std::vector<byte> read_file_into_vector(std::string file_name) {
+std::vector<byte> read_file_into_vector(std::string file_name)
+{
 	std::ifstream ifs;
 	ifs.open(file_name, std::ios::in | std::ios::binary);
 	ifs.unsetf(std::ios::skipws);
@@ -38,56 +39,58 @@ std::vector<byte> read_file_into_vector(std::string file_name) {
 	return buffer;
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
-	po::options_description desc("embed-resource[.exe] usage");
-	desc.add_options()
-		("input,i", po::value<std::string>(), "input file")
-		("output,o", po::value<std::string>(), "output file")
-		("comment,c", "embeded file content as multiline c comment")
-		("version,v", "shows version of the application")
-		("help,h", "shows help")
-		;
+	std::string input_file;
+	std::string output_file;
 
-	po::variables_map vm;
-	store(po::parse_command_line(argc, argv, desc), vm);
-	notify(vm);
+	bool version;
+	bool help;
+	bool contentAsComent;
 
-	if (!vm["help"].empty())
+	Flags flags;
+
+	flags.Var(input_file, 'i', "input", std::string(""), "Input file name");
+	flags.Var(output_file, 'o', "output", std::string(""), "Output file name");
+	flags.Bool(contentAsComent, 'c', "comments", "Inserts original content of the file into output as multi-line comments");
+	flags.Bool(version, 'v', "version", "shows version and exit");
+	flags.Bool(help, 'h', "help", "show this help and exit");
+
+	if (!flags.Parse(argc, argv))
 	{
-		show_help(std::cout, desc);
+		flags.PrintHelp(argv[0]);
+		return 1;
+	}
+	else if (help)
+	{
+		flags.PrintHelp(argv[0]);
+		return 0;
+	}
+
+	if (help)
+	{
+		show_help(argv[0], std::cout, flags);
 		return EXIT_SUCCESS;
 	}
 
-	if (!vm["version"].empty())
+	if (version)
 	{
 		std::cout << "embed-resource version " << PROJECT_VERSION << std::endl;
 		return EXIT_SUCCESS;
 	}
 
-	std::string input_file;
-	std::string output_file;
-
-	if (vm["input"].empty())
+	if (input_file == "")
 	{
 		std::cerr << "ERROR: input file is not specified" << std::endl;
-		show_help(std::cerr, desc);
+		show_help(argv[0], std::cerr, flags);
 		return EXIT_FAILURE;
 	}
-	input_file = vm["input"].as<std::string>();
 
-	if (vm["output"].empty())
+	if (output_file == "")
 	{
 		std::cerr << "ERROR: output file is not specified" << std::endl;
-		show_help(std::cerr, desc);
+		show_help(argv[0], std::cerr, flags);
 		return EXIT_FAILURE;
-	}
-	output_file = vm["output"].as<std::string>();
-
-	bool showContentAsComment = false;
-	if (!vm["comment"].empty())
-	{
-		showContentAsComment = true;
 	}
 
 	std::string sym(input_file);
@@ -105,11 +108,11 @@ int main(int argc, char** argv)
 	ofs << "#include <EmbedResource.hpp>" << std::endl;
 	ofs << "" << std::endl;
 
-	if (showContentAsComment)
+	if (contentAsComent)
 	{
 		ofs << "// Content of input file " << input_file << std::endl;
 		ofs << "/***" << std::endl;
-		std::copy(input_file_content.begin(), input_file_content.end(), std::ostream_iterator< byte >(ofs));
+		std::copy(input_file_content.begin(), input_file_content.end(), std::ostream_iterator<byte>(ofs));
 		ofs << std::endl
 			<< "***/" << std::endl;
 	}
@@ -117,15 +120,18 @@ int main(int argc, char** argv)
 
 	size_t lineCount = 0;
 
-	for (int i = 0; i < input_file_content.size(); i++) {
-		if (++lineCount == 20) {
+	for (int i = 0; i < input_file_content.size(); i++)
+	{
+		if (++lineCount == 20)
+		{
 			ofs << std::endl;
 			lineCount = 0;
 		}
 		ofs << "0x" << std::hex << (input_file_content[i] & 0xff) << ", ";
 	}
 
-	ofs << std::endl << "};" << std::endl;
+	ofs << std::endl
+		<< "};" << std::endl;
 	ofs << "const std::size_t _resource_" << sym << "_len = sizeof(_resource_" << sym << ");";
 
 	ofs.close();

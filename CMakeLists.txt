@@ -5,24 +5,7 @@ set(PROJECT_VERSION 0.2.0)
 project(EmbedResource
     VERSION ${PROJECT_VERSION})
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED YES)
-
-set(BOOST_REQUIRED_LIBRARIES program_options)
-include(FetchContent)
-FetchContent_Declare(
-  Boost
-  URL https://github.com/boostorg/boost/releases/download/boost-1.85.0/boost-1.85.0-cmake.zip  
-  EXCLUDE_FROM_ALL
-)
-set(BOOST_INCLUDE_LIBRARIES ${BOOST_REQUIRED_LIBRARIES})
-FetchContent_MakeAvailable(Boost)
-
-foreach(lib_name ${BOOST_REQUIRED_LIBRARIES})
-    set_target_properties(boost_${lib_name} PROPERTIES FOLDER "Dependencies")
-endforeach()
-
-configure_file("config.h.in" "config.h")
+configure_file("config.h.in" "${PROJECT_BINARY_DIR}/internal/config.h")
 
 function(embed_resources out_var)
     set(flags CONTENT_AS_COMMENT)
@@ -57,8 +40,11 @@ function(embed_resources out_var)
     include_directories(${out_f_dir} ${EMBED_RESOURCES_SOURCE_DIR})
 endfunction()
 
-add_executable(embed_resource main.cpp config.h EmbedResource.hpp )
-target_link_libraries(embed_resource Boost::program_options)
-target_include_directories(embed_resource PRIVATE ${PROJECT_BINARY_DIR})
+add_executable(embed_resource main.cpp EmbedResource.hpp Flags.hpp getopt.cpp getopt.h)
+target_include_directories(embed_resource PRIVATE "${PROJECT_BINARY_DIR}")
 
-set_target_properties(embed_resource PROPERTIES PROJECT_LABEL "Embed Resource")
+set_target_properties(embed_resource PROPERTIES
+                        PROJECT_LABEL "Embed Resource" 
+                        CXX_STANDARD 17
+                        CXX_STANDARD_REQUIRED YES
+                        CXX_EXTENSIONS Off)
