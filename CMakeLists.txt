@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.28...3.29)
 
 # Project Version
-set(PROJECT_VERSION 0.2.0)
 project(EmbedResource
-    VERSION ${PROJECT_VERSION})
+    DESCRIPTION "Creates C++ Embeded Resources as .hpp files"
+    HOMEPAGE_URL "https://github.com/soltys/embed_resource"
+    VERSION 0.2.1)
 
 configure_file("config.h.in" "${PROJECT_BINARY_DIR}/internal/config.h")
 

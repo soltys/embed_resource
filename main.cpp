@@ -1,6 +1,7 @@
 #include <internal/config.h>
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <algorithm>
 #include <string>
@@ -123,12 +124,12 @@ int main(int argc, char **argv)
 
 	for (int i = 0; i < input_file_content.size(); i++)
 	{
-		if (++lineCount == 20)
+		if (lineCount++ == 25)
 		{
 			ofs << std::endl;
-			lineCount = 0;
+			lineCount = 1;
 		}
-		ofs << "0x" << std::hex << (input_file_content[i] & 0xff) << ", ";
+		ofs << "0x" << std::setfill('0') << std::setw(2) << std::right << std::hex  << (input_file_content[i] & 0xff) << ", ";
 	}
 
 	ofs << std::endl
