@@ -4,11 +4,11 @@ cmake_minimum_required(VERSION 3.28...3.29)
 project(EmbedResource
     DESCRIPTION "Creates C++ Embeded Resources as .hpp files"
     HOMEPAGE_URL "https://github.com/soltys/embed_resource"
-    VERSION 0.2.1)
+    VERSION 0.2.2)
 
 configure_file("config.h.in" "${PROJECT_BINARY_DIR}/internal/config.h")
 
-add_executable(embed_resource main.cpp EmbedResource.hpp Flags.hpp getopt.cpp getopt.h)
+add_executable(embed_resource main.cpp EmbedResource.hpp args.hxx)
 target_include_directories(embed_resource PRIVATE "${PROJECT_BINARY_DIR}")
 
 set_target_properties(embed_resource PROPERTIES

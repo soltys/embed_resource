@@ -7,19 +7,9 @@
 #include <string>
 #include <vector>
 #include <iterator>
-#include "Flags.hpp"
+#include "args.hxx"
 
 typedef unsigned char byte;
-void show_help(char *program_name, std::ostream &ostream, Flags desc)
-{
-	ostream
-		<< "embed-resource (ver. " << PROJECT_VERSION << ")" << std::endl
-		<< "    Creates {output_file_name} (which will be .hpp type file) from the contents of {input_file_name}" << std::endl;
-	desc.PrintHelp(program_name, ostream);
-	ostream << std::endl
-			<< "EXAMPLE:" << std::endl
-			<< "    embed-resource.exe -i foo.txt -o foo.hpp" << std::endl;
-}
 
 std::vector<byte> read_file_into_vector(std::string file_name)
 {
@@ -45,56 +35,61 @@ int main(int argc, char **argv)
 {
 	std::string input_file;
 	std::string output_file;
-
-	bool version;
-	bool help;
 	bool contentAsComent;
 
-	Flags flags;
+	args::ArgumentParser parser(PROJECT_DESCRIPTION);
+	args::HelpFlag help_flag(parser, "help", "Display this help menu", {'h', "help"});
+	args::Flag version_flag(parser, "version", "shows version and exit", {'v', "version"});
+	args::Flag contentAsComent_flag(parser, "comments", "Inserts original content of the file into output as multi-line comments", {'c', "comments"});
+	args::ValueFlag<std::string> input_file_flag(parser, "input", "input file to be processed", {'i', "input"});
+	args::ValueFlag<std::string> output_file_flag(parser, "output", "output file name", {'o', "output"});
 
-	flags.Var(input_file, 'i', "input", std::string(""), "Input file name");
-	flags.Var(output_file, 'o', "output", std::string(""), "Output file name");
-	flags.Bool(contentAsComent, 'c', "comments", "Inserts original content of the file into output as multi-line comments");
-	flags.Bool(version, 'v', "version", "shows version and exit");
-	flags.Bool(help, 'h', "help", "show this help and exit");
-
-	if (!flags.Parse(argc, argv))
+	try
 	{
-		flags.PrintHelp(argv[0]);
-		return 1;
+		parser.ParseCLI(argc, argv);
 	}
-	else if (help)
+	catch (args::Help)
 	{
-		flags.PrintHelp(argv[0]);
-		return 0;
-	}
-
-	if (help)
-	{
-		show_help(argv[0], std::cout, flags);
+		std::cout << parser;
 		return EXIT_SUCCESS;
 	}
+	catch (args::ParseError e)
+	{
+		std::cerr << e.what() << std::endl;
+		std::cerr << parser;
+		return EXIT_FAILURE;
+	}
+	catch (args::ValidationError e)
+	{
+		std::cerr << e.what() << std::endl;
+		std::cerr << parser;
+		return EXIT_FAILURE;
+	}
 
-	if (version)
+	if (version_flag)
 	{
 		std::cout << "embed-resource version " << PROJECT_VERSION << std::endl;
 		return EXIT_SUCCESS;
 	}
 
-	if (input_file == "")
+	if (!input_file_flag)
 	{
 		std::cerr << "ERROR: input file is not specified" << std::endl;
-		show_help(argv[0], std::cerr, flags);
+		std::cerr << parser;
 		return EXIT_FAILURE;
 	}
+	input_file = args::get(input_file_flag);
 
-	if (output_file == "")
+	if (!output_file_flag)
 	{
 		std::cerr << "ERROR: output file is not specified" << std::endl;
-		show_help(argv[0], std::cerr, flags);
+		std::cerr << parser;
 		return EXIT_FAILURE;
 	}
+	output_file = args::get(output_file_flag);
 
+	contentAsComent = args::get(contentAsComent_flag);
+	
 	std::string sym(input_file);
 	std::replace(sym.begin(), sym.end(), '.', '_');
 	std::replace(sym.begin(), sym.end(), '-', '_');
@@ -129,7 +124,7 @@ int main(int argc, char **argv)
 			ofs << std::endl;
 			lineCount = 1;
 		}
-		ofs << "0x" << std::setfill('0') << std::setw(2) << std::right << std::hex  << (input_file_content[i] & 0xff) << ", ";
+		ofs << "0x" << std::setfill('0') << std::setw(2) << std::right << std::hex << (input_file_content[i] & 0xff) << ", ";
 	}
 
 	ofs << std::endl
